@@ -72,7 +72,8 @@ fn test_transaction_serialization() {
     };
 
     let serialized = tx.serialize();
-    assert_eq!(serialized.len(), 8); // 4 bytes version + 4 bytes lock_time
+    // 4 bytes version + 4 bytes input count + 4 bytes output count + 4 bytes lock_time = 16
+    assert_eq!(serialized.len(), 16);
 }
 
 #[test]
@@ -94,16 +95,34 @@ fn test_transaction_decoding() {
 #[test]
 fn test_transaction_decoding_with_inputs() {
     // Version (1) + inputs count (1) + outputs count (0) + lock_time (0)
-    let data = [
+    // Then: 1 input (OutPoint + script_sig_len + script_sig + sequence)
+    // OutPoint: txid (32 bytes, all 0), vout (0)
+    // script_sig_len: 0
+    // script_sig: (none)
+    // sequence: 0xFFFFFFFF
+    let mut data = vec![
         1, 0, 0, 0, // version (i32)
         1, 0, 0, 0, // inputs count (u32)
         0, 0, 0, 0, // outputs count (u32)
         0, 0, 0, 0, // lock_time (u32)
     ];
+    // Input
+    data.extend([0u8; 32]); // txid
+    data.extend([0u8; 4]); // vout
+    data.extend([0u8; 4]); // script_sig_len (0)
+    // no script_sig
+    data.extend([0xFF, 0xFF, 0xFF, 0xFF]); // sequence
     let tx = LegacyTransaction::try_from(&data[..]).unwrap();
     assert_eq!(tx.version, 1);
-    assert_eq!(tx.inputs.capacity(), 1); // Verify we reserved space
+    assert_eq!(tx.inputs.len(), 1);
+    assert_eq!(tx.outputs.len(), 0);
     assert_eq!(tx.lock_time, 0);
+    // Check input fields
+    let input = &tx.inputs[0];
+    assert_eq!(input.previous_output.txid, [0u8; 32]);
+    assert_eq!(input.previous_output.vout, 0);
+    assert_eq!(input.script_sig.len(), 0);
+    assert_eq!(input.sequence, 0xFFFFFFFF);
 }
 
 #[test]

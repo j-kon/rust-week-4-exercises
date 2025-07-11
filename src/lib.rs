@@ -118,7 +118,8 @@ impl TxInput {
         v
     }
     pub fn parse(data: &[u8]) -> Result<(Self, usize), BitcoinError> {
-        if data.len() < 36 + 4 { // OutPoint + script_len
+        if data.len() < 36 + 4 {
+            // OutPoint + script_len
             return Err(BitcoinError::InvalidTransaction);
         }
         let (outpoint, outpoint_len) = OutPoint::parse(data)?;
@@ -171,12 +172,9 @@ impl TxOutput {
             return Err(BitcoinError::InvalidTransaction);
         }
         let value = u64::from_le_bytes([
-            data[0], data[1], data[2], data[3],
-            data[4], data[5], data[6], data[7],
+            data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
         ]);
-        let script_len = u32::from_le_bytes([
-            data[8], data[9], data[10], data[11],
-        ]) as usize;
+        let script_len = u32::from_le_bytes([data[8], data[9], data[10], data[11]]) as usize;
         let script_start = 12;
         let script_end = script_start + script_len;
         if data.len() < script_end {
@@ -212,9 +210,7 @@ impl OutPoint {
         }
         let mut txid = [0u8; 32];
         txid.copy_from_slice(&data[0..32]);
-        let vout = u32::from_le_bytes([
-            data[32], data[33], data[34], data[35],
-        ]);
+        let vout = u32::from_le_bytes([data[32], data[33], data[34], data[35]]);
         Ok((OutPoint { txid, vout }, 36))
     }
 }
@@ -228,9 +224,13 @@ pub fn parse_cli_args(args: &[String]) -> Result<CliCommand, BitcoinError> {
     match args[0].as_str() {
         "send" => {
             if args.len() < 3 {
-                return Err(BitcoinError::ParseError("Missing arguments for send".to_string()));
+                return Err(BitcoinError::ParseError(
+                    "Missing arguments for send".to_string(),
+                ));
             }
-            let amount = args[1].parse::<u64>().map_err(|_| BitcoinError::InvalidAmount)?;
+            let amount = args[1]
+                .parse::<u64>()
+                .map_err(|_| BitcoinError::InvalidAmount)?;
             let address = args[2].clone();
             Ok(CliCommand::Send { amount, address })
         }

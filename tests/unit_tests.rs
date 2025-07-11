@@ -110,7 +110,7 @@ fn test_transaction_decoding_with_inputs() {
     data.extend([0u8; 32]); // txid
     data.extend([0u8; 4]); // vout
     data.extend([0u8; 4]); // script_sig_len (0)
-    // no script_sig
+                           // no script_sig
     data.extend([0xFF, 0xFF, 0xFF, 0xFF]); // sequence
     let tx = LegacyTransaction::try_from(&data[..]).unwrap();
     assert_eq!(tx.version, 1);
